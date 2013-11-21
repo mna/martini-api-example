@@ -17,7 +17,6 @@ func init() {
 	// Setup middleware
 	m.Use(martini.Recovery())
 	m.Use(martini.Logger())
-	m.Use(RequireHttps)
 	m.Use(auth.Basic(AuthToken, ""))
 	m.Use(MapEncoder)
 	// Setup routes
@@ -25,12 +24,6 @@ func init() {
 	// Inject AlbumRepository
 	m.MapTo(db, (*AlbumRepository)(nil))
 	m.Action(r.Handle)
-}
-
-func RequireHttps(w http.ResponseWriter, r *http.Request) {
-	if r.TLS == nil {
-		http.Error(w, "https scheme is required", http.StatusBadRequest)
-	}
 }
 
 func MapEncoder(c martini.Context, r *http.Request) {
@@ -47,7 +40,23 @@ func MapEncoder(c martini.Context, r *http.Request) {
 
 func main() {
 	go func() {
-		http.ListenAndServe(":8000", m)
+		// Listen on http: to raise an error and indicate that https: is required.
+		//
+		// This could also be achieved by passing the same `m` martini instance as
+		// used by the https server, and by using a middleware that checks for https
+		// and returns an error if it is not a secure connection. This would have the benefit
+		// of handling only the defined routes. However, it is common practice to define
+		// APIs on separate web servers from the web (html) pages, for maintenance and
+		// scalability purposes, among other things. It is also common practice to use
+		// a different subdomain so that cookies are not transfered with every API request.
+		// So with that in mind, it seems reasonable to refuse each and every request
+		// on the non-https server, regardless of the route.
+		//
+		http.ListenAndServe(":8000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "https scheme is required", http.StatusBadRequest)
+		}))
 	}()
+
+	// Listen on https: with the preconfigured martini instance.
 	http.ListenAndServeTLS(":8001", "cert.pem", "key.pem", m)
 }
