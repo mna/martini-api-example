@@ -20,6 +20,7 @@ func init() {
 	m.Use(auth.Basic(AuthToken, ""))
 	m.Use(MapEncoder)
 	// Setup routes
+	// TODO : Support extension-style format (.json, etc.)
 	r.Get("/albums", GetAlbums)
 	// Inject AlbumRepository
 	m.MapTo(db, (*AlbumRepository)(nil))

@@ -7,7 +7,7 @@ import (
 )
 
 type AlbumRepository interface {
-	//Get(id int) *Album
+	Get(id int) *Album
 	GetAll() []*Album
 	//Find(band, title string, year int) []*Album
 	//Add(a *Album) (int, error)
@@ -45,6 +45,12 @@ func (db *albumsDB) GetAll() []*Album {
 		i++
 	}
 	return ar
+}
+
+func (db *albumsDB) Get(id int) *Album {
+	db.RLock()
+	defer db.RUnlock()
+	return db.m[id]
 }
 
 type Album struct {
