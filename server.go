@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/auth"
@@ -20,19 +22,30 @@ func init() {
 	m.Use(auth.Basic(AuthToken, ""))
 	m.Use(MapEncoder)
 	// Setup routes
-	// TODO : Support extension-style format (.json, etc.)
-	r.Get("/albums", GetAlbums)
+	r.Get(`/albums`, GetAlbums)
+	r.Get(`/albums/:id`, GetAlbum)
 	// Inject AlbumRepository
 	m.MapTo(db, (*AlbumRepository)(nil))
 	m.Action(r.Handle)
 }
 
+var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
+
 func MapEncoder(c martini.Context, r *http.Request) {
-	vals := r.URL.Query()
-	switch vals.Get("f") {
-	case "xml":
+	matches := rxExt.FindStringSubmatch(r.URL.Path)
+	ft := ".json"
+	if len(matches) > 1 {
+		l := len(r.URL.Path) - len(matches[1])
+		if strings.HasSuffix(r.URL.Path, "/") {
+			l--
+		}
+		r.URL.Path = r.URL.Path[:l]
+		ft = matches[1]
+	}
+	switch ft {
+	case ".xml":
 		c.MapTo(xmlEncoder{}, (*Encoder)(nil))
-	case "text":
+	case ".text":
 		c.MapTo(textEncoder{}, (*Encoder)(nil))
 	default:
 		c.MapTo(jsonEncoder{}, (*Encoder)(nil))

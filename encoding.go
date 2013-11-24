@@ -16,6 +16,9 @@ type jsonEncoder struct{}
 func (_ jsonEncoder) Encode(w http.ResponseWriter, v ...interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
+	if len(v) == 1 {
+		return enc.Encode(v[0])
+	}
 	return enc.Encode(v)
 }
 
