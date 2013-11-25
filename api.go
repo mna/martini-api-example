@@ -8,36 +8,21 @@ import (
 	"github.com/codegangsta/martini"
 )
 
-// Because `panic`s are caught by martini's Recovery handler, it can be used
-// to return server-side errors (500). Some helpful text message should probably
-// be sent, although not the technical error message as-is.
-
-// TODO : Return errors in same format as requested (use Error struct and Encoder)
 func GetAlbums(enc Encoder, ar AlbumRepository) string {
-	data, err := enc.Encode(toIface(ar.GetAll())...)
-	if err != nil {
-		panic(err)
-	}
-	return data
+	return MustEncode(enc.Encode(toIface(ar.GetAll())...))
 }
 
 func GetAlbum(enc Encoder, ar AlbumRepository, parms martini.Params) (int, string) {
 	id, err := strconv.Atoi(parms["id"])
-	if err != nil {
-		return http.StatusNotFound, "album not found"
-	}
 	al := ar.Get(id)
-	if al == nil {
-		return http.StatusNotFound, "album not found"
+	if err != nil || al == nil {
+		return http.StatusNotFound, MustEncode(enc.Encode(
+			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
-	data, err := enc.Encode(al)
-	if err != nil {
-		panic(err)
-	}
-	return 200, data
+	return 200, MustEncode(enc.Encode(al))
 }
 
-func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepository) {
+func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepository) (int, string) {
 	band, title, yrs := r.FormValue("band"), r.FormValue("title"), r.FormValue("year")
 	yri, err := strconv.Atoi(yrs)
 	if err != nil {
@@ -51,18 +36,12 @@ func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepos
 	id, err := ar.Add(al)
 	switch err {
 	case ErrAlreadyExists:
-		http.Error(w, err.Error(), http.StatusConflict)
+		return http.StatusConflict, MustEncode(enc.Encode(
+			NewError(ErrCodeAlreadyExists, fmt.Sprintf("the album '%s' from '%s' already exists", title, band))))
 	case nil:
 		// TODO : Location is expected to be an absolute URI, as per the RFC2616
-		data, err := enc.Encode(al)
-		if err != nil {
-			panic(err)
-		}
 		w.Header().Set("Location", fmt.Sprintf("/albums/%d", id))
-		w.WriteHeader(http.StatusCreated)
-		if _, err := w.Write([]byte(data)); err != nil {
-			panic(err)
-		}
+		return http.StatusCreated, MustEncode(enc.Encode(al))
 	default:
 		panic(err)
 	}

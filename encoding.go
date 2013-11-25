@@ -11,6 +11,16 @@ type Encoder interface {
 	Encode(v ...interface{}) (string, error)
 }
 
+// Because `panic`s are caught by martini's Recovery handler, it can be used
+// to return server-side errors (500). Some helpful text message should probably
+// be sent, although not the technical error message as-is.
+func MustEncode(data string, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 type jsonEncoder struct{}
 
 func (_ jsonEncoder) Encode(v ...interface{}) (string, error) {
