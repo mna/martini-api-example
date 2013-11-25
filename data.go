@@ -2,22 +2,28 @@ package main
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"sync"
+)
+
+var (
+	ErrAlreadyExists = errors.New("album already exists")
 )
 
 type AlbumRepository interface {
 	Get(id int) *Album
 	GetAll() []*Album
 	//Find(band, title string, year int) []*Album
-	//Add(a *Album) (int, error)
+	Add(a *Album) (int, error)
 	//Update(a *Album) error
 	//Delete(id int) error
 }
 
 type albumsDB struct {
 	sync.RWMutex
-	m map[int]*Album
+	m   map[int]*Album
+	seq int
 }
 
 var db *albumsDB
@@ -30,6 +36,7 @@ func init() {
 	db.m[1] = &Album{Id: 1, Band: "Slayer", Title: "Reign In Blood", Year: 1986}
 	db.m[2] = &Album{Id: 2, Band: "Slayer", Title: "Seasons In The Abyss", Year: 1990}
 	db.m[3] = &Album{Id: 3, Band: "Bruce Springsteen", Title: "Born To Run", Year: 1975}
+	db.seq = 3
 }
 
 func (db *albumsDB) GetAll() []*Album {
@@ -51,6 +58,30 @@ func (db *albumsDB) Get(id int) *Album {
 	db.RLock()
 	defer db.RUnlock()
 	return db.m[id]
+}
+
+func (db *albumsDB) Add(a *Album) (int, error) {
+	db.Lock()
+	defer db.Unlock()
+	// Return an error if band-title already exists
+	if !db.isUnique(a) {
+		return 0, ErrAlreadyExists
+	}
+	// Get the unique ID
+	db.seq++
+	a.Id = db.seq
+	// Store
+	db.m[a.Id] = a
+	return a.Id, nil
+}
+
+func (db *albumsDB) isUnique(a *Album) bool {
+	for _, v := range db.m {
+		if v.Band == a.Band && v.Title == a.Title {
+			return false
+		}
+	}
+	return true
 }
 
 type Album struct {

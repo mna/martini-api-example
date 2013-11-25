@@ -1,59 +1,62 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"net/http"
 )
 
 type Encoder interface {
-	Encode(w http.ResponseWriter, v ...interface{}) error
+	Encode(v ...interface{}) (string, error)
 }
 
 type jsonEncoder struct{}
 
-func (_ jsonEncoder) Encode(w http.ResponseWriter, v ...interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(w)
+func (_ jsonEncoder) Encode(v ...interface{}) (string, error) {
+	var data interface{} = v
 	if len(v) == 1 {
-		return enc.Encode(v[0])
+		data = v[0]
 	}
-	return enc.Encode(v)
+	b, err := json.Marshal(data)
+	return string(b), err
 }
 
 type xmlEncoder struct{}
 
-func (_ xmlEncoder) Encode(w http.ResponseWriter, v ...interface{}) error {
-	w.Header().Set("Content-Type", "application/xml")
-	if _, err := w.Write([]byte(xml.Header)); err != nil {
-		return err
+func (_ xmlEncoder) Encode(v ...interface{}) (string, error) {
+	var buf bytes.Buffer
+	if _, err := buf.Write([]byte(xml.Header)); err != nil {
+		return "", err
 	}
 	if len(v) > 1 {
-		if _, err := w.Write([]byte("<albums>")); err != nil {
-			return err
+		if _, err := buf.Write([]byte("<albums>")); err != nil {
+			return "", err
 		}
 	}
-	enc := xml.NewEncoder(w)
-	if err := enc.Encode(v); err != nil {
-		return err
+	b, err := xml.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	if _, err := buf.Write(b); err != nil {
+		return "", err
 	}
 	if len(v) > 1 {
-		if _, err := w.Write([]byte("</albums>")); err != nil {
-			return err
+		if _, err := buf.Write([]byte("</albums>")); err != nil {
+			return "", err
 		}
 	}
-	return nil
+	return buf.String(), nil
 }
 
 type textEncoder struct{}
 
-func (_ textEncoder) Encode(w http.ResponseWriter, v ...interface{}) error {
-	w.Header().Set("Content-Type", "text/plain")
+func (_ textEncoder) Encode(v ...interface{}) (string, error) {
+	var buf bytes.Buffer
 	for _, v := range v {
-		if _, err := w.Write([]byte(fmt.Sprintf("%s\n", v))); err != nil {
-			return err
+		if _, err := fmt.Fprintf(&buf, "%s\n", v); err != nil {
+			return "", err
 		}
 	}
-	return nil
+	return buf.String(), nil
 }

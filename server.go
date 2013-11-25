@@ -15,23 +15,25 @@ const AuthToken = "token"
 
 func init() {
 	m = martini.New()
-	r := martini.NewRouter()
 	// Setup middleware
 	m.Use(martini.Recovery())
 	m.Use(martini.Logger())
 	m.Use(auth.Basic(AuthToken, ""))
 	m.Use(MapEncoder)
 	// Setup routes
+	r := martini.NewRouter()
 	r.Get(`/albums`, GetAlbums)
 	r.Get(`/albums/:id`, GetAlbum)
+	r.Post(`/albums`, AddAlbum)
 	// Inject AlbumRepository
 	m.MapTo(db, (*AlbumRepository)(nil))
+	// Add the router action
 	m.Action(r.Handle)
 }
 
 var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
 
-func MapEncoder(c martini.Context, r *http.Request) {
+func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
 	matches := rxExt.FindStringSubmatch(r.URL.Path)
 	ft := ".json"
 	if len(matches) > 1 {
@@ -45,10 +47,13 @@ func MapEncoder(c martini.Context, r *http.Request) {
 	switch ft {
 	case ".xml":
 		c.MapTo(xmlEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "application/xml")
 	case ".text":
 		c.MapTo(textEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	default:
 		c.MapTo(jsonEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "application/json")
 	}
 }
 
