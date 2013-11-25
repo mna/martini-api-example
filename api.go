@@ -47,6 +47,22 @@ func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepos
 	}
 }
 
+// Martini requires that 2 parameters are returned to treat the first one as the
+// status code. Delete is an idempotent action, but this does not mean it should
+// always return 204 - No content, idempotence relates to the state of the server
+// after the request, not the returned status code. So I return a 404 - Not found
+// if the id does not exist.
+func DeleteAlbum(enc Encoder, ar AlbumRepository, parms martini.Params) (int, string) {
+	id, err := strconv.Atoi(parms["id"])
+	al := ar.Get(id)
+	if err != nil || al == nil {
+		return http.StatusNotFound, MustEncode(enc.Encode(
+			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
+	}
+	ar.Delete(id)
+	return http.StatusNoContent, ""
+}
+
 func toIface(v []*Album) []interface{} {
 	if len(v) == 0 {
 		return nil

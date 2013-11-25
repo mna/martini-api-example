@@ -17,7 +17,7 @@ type AlbumRepository interface {
 	//Find(band, title string, year int) []*Album
 	Add(a *Album) (int, error)
 	//Update(a *Album) error
-	//Delete(id int) error
+	Delete(id int)
 }
 
 type albumsDB struct {
@@ -73,6 +73,12 @@ func (db *albumsDB) Add(a *Album) (int, error) {
 	// Store
 	db.m[a.Id] = a
 	return a.Id, nil
+}
+
+func (db *albumsDB) Delete(id int) {
+	db.Lock()
+	defer db.Unlock()
+	delete(db.m, id)
 }
 
 func (db *albumsDB) isUnique(a *Album) bool {

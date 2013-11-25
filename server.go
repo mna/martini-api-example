@@ -25,6 +25,7 @@ func init() {
 	r.Get(`/albums`, GetAlbums)
 	r.Get(`/albums/:id`, GetAlbum)
 	r.Post(`/albums`, AddAlbum)
+	r.Delete(`/albums/:id`, DeleteAlbum)
 	// Inject AlbumRepository
 	m.MapTo(db, (*AlbumRepository)(nil))
 	// Add the router action
