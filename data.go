@@ -11,10 +11,10 @@ var (
 	ErrAlreadyExists = errors.New("album already exists")
 )
 
-type AlbumRepository interface {
+type DB interface {
 	Get(id int) *Album
 	GetAll() []*Album
-	//Find(band, title string, year int) []*Album
+	Find(band, title string, year int) []*Album
 	Add(a *Album) (int, error)
 	Update(a *Album) error
 	Delete(id int)
@@ -52,6 +52,22 @@ func (db *albumsDB) GetAll() []*Album {
 		i++
 	}
 	return ar
+}
+
+func (db *albumsDB) Find(band, title string, year int) []*Album {
+	db.RLock()
+	defer db.RUnlock()
+	var res []*Album
+	for _, v := range db.m {
+		if v.Band == band || band == "" {
+			if v.Title == title || title == "" {
+				if v.Year == year || year == 0 {
+					res = append(res, v)
+				}
+			}
+		}
+	}
+	return res
 }
 
 func (db *albumsDB) Get(id int) *Album {

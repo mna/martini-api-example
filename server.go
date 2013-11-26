@@ -28,7 +28,7 @@ func init() {
 	r.Put(`/albums/:id`, UpdateAlbum)
 	r.Delete(`/albums/:id`, DeleteAlbum)
 	// Inject AlbumRepository
-	m.MapTo(db, (*AlbumRepository)(nil))
+	m.MapTo(db, (*DB)(nil))
 	// Add the router action
 	m.Action(r.Handle)
 }

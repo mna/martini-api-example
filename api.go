@@ -8,13 +8,22 @@ import (
 	"github.com/codegangsta/martini"
 )
 
-func GetAlbums(enc Encoder, ar AlbumRepository) string {
-	return Must(enc.Encode(toIface(ar.GetAll())...))
+func GetAlbums(r *http.Request, enc Encoder, db DB) string {
+	qs := r.URL.Query()
+	band, title, yrs := qs.Get("band"), qs.Get("title"), qs.Get("year")
+	yri, err := strconv.Atoi(yrs)
+	if err != nil {
+		yri = 0
+	}
+	if band != "" || title != "" || yri != 0 {
+		return Must(enc.Encode(toIface(db.Find(band, title, yri))...))
+	}
+	return Must(enc.Encode(toIface(db.GetAll())...))
 }
 
-func GetAlbum(enc Encoder, ar AlbumRepository, parms martini.Params) (int, string) {
+func GetAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 	id, err := strconv.Atoi(parms["id"])
-	al := ar.Get(id)
+	al := db.Get(id)
 	if err != nil || al == nil {
 		return http.StatusNotFound, Must(enc.Encode(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
@@ -22,9 +31,9 @@ func GetAlbum(enc Encoder, ar AlbumRepository, parms martini.Params) (int, strin
 	return 200, Must(enc.Encode(al))
 }
 
-func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepository) (int, string) {
+func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, db DB) (int, string) {
 	al := getPostAlbum(r)
-	id, err := ar.Add(al)
+	id, err := db.Add(al)
 	switch err {
 	case ErrAlreadyExists:
 		return http.StatusConflict, Must(enc.Encode(
@@ -38,14 +47,14 @@ func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, ar AlbumRepos
 	}
 }
 
-func UpdateAlbum(r *http.Request, enc Encoder, ar AlbumRepository, parms martini.Params) (int, string) {
+func UpdateAlbum(r *http.Request, enc Encoder, db DB, parms martini.Params) (int, string) {
 	al, err := getPutAlbum(r, parms)
 	if err != nil {
 		// Invalid id, 404
 		return http.StatusNotFound, Must(enc.Encode(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
-	err = ar.Update(al)
+	err = db.Update(al)
 	switch err {
 	case ErrAlreadyExists:
 		return http.StatusConflict, Must(enc.Encode(
@@ -85,14 +94,14 @@ func getPutAlbum(r *http.Request, parms martini.Params) (*Album, error) {
 // always return 204 - No content, idempotence relates to the state of the server
 // after the request, not the returned status code. So I return a 404 - Not found
 // if the id does not exist.
-func DeleteAlbum(enc Encoder, ar AlbumRepository, parms martini.Params) (int, string) {
+func DeleteAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 	id, err := strconv.Atoi(parms["id"])
-	al := ar.Get(id)
+	al := db.Get(id)
 	if err != nil || al == nil {
 		return http.StatusNotFound, Must(enc.Encode(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
-	ar.Delete(id)
+	db.Delete(id)
 	return http.StatusNoContent, ""
 }
 
