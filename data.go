@@ -16,7 +16,7 @@ type AlbumRepository interface {
 	GetAll() []*Album
 	//Find(band, title string, year int) []*Album
 	Add(a *Album) (int, error)
-	//Update(a *Album) error
+	Update(a *Album) error
 	Delete(id int)
 }
 
@@ -75,6 +75,16 @@ func (db *albumsDB) Add(a *Album) (int, error) {
 	return a.Id, nil
 }
 
+func (db *albumsDB) Update(a *Album) error {
+	db.Lock()
+	defer db.Unlock()
+	if !db.isUnique(a) {
+		return ErrAlreadyExists
+	}
+	db.m[a.Id] = a
+	return nil
+}
+
 func (db *albumsDB) Delete(id int) {
 	db.Lock()
 	defer db.Unlock()
@@ -83,7 +93,7 @@ func (db *albumsDB) Delete(id int) {
 
 func (db *albumsDB) isUnique(a *Album) bool {
 	for _, v := range db.m {
-		if v.Band == a.Band && v.Title == a.Title {
+		if v.Band == a.Band && v.Title == a.Title && v.Id != a.Id {
 			return false
 		}
 	}
