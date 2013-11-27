@@ -130,11 +130,11 @@ func (db *albumsDB) isUnique(a *Album) bool {
 
 // The Album data structure, serializable in JSON, XML and text using the Stringer interface.
 type Album struct {
-	XMLName xml.Name `json:"-" 			xml:"album"`
-	Id      int      `json:"id" 		xml:"id,attr"`
-	Band    string   `json:"band" 	xml:"band"`
-	Title   string   `json:"title" 	xml:"title"`
-	Year    int      `json:"year" 	xml:"year"`
+	XMLName xml.Name `json:"-" xml:"album"`
+	Id      int      `json:"id" xml:"id,attr"`
+	Band    string   `json:"band" xml:"band"`
+	Title   string   `json:"title" xml:"title"`
+	Year    int      `json:"year" xml:"year"`
 }
 
 func (a *Album) String() string {

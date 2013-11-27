@@ -13,9 +13,9 @@ const (
 
 // The serializable Error structure.
 type Error struct {
-	XMLName xml.Name `json:"-" 				xml:"error"`
-	Code    int      `json:"code" 		xml:"code,attr"`
-	Message string   `json:"message" 	xml:"message"`
+	XMLName xml.Name `json:"-" xml:"error"`
+	Code    int      `json:"code" xml:"code,attr"`
+	Message string   `json:"message" xml:"message"`
 }
 
 func (e *Error) Error() string {
