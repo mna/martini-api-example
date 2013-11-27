@@ -8,34 +8,43 @@ import (
 	"github.com/codegangsta/martini"
 )
 
+// GetAlbums returns the list of albums (possibly filtered).
 func GetAlbums(r *http.Request, enc Encoder, db DB) string {
+	// Get the query string arguments, if any
 	qs := r.URL.Query()
 	band, title, yrs := qs.Get("band"), qs.Get("title"), qs.Get("year")
 	yri, err := strconv.Atoi(yrs)
 	if err != nil {
+		// If year is not a valid integer, ignore it
 		yri = 0
 	}
 	if band != "" || title != "" || yri != 0 {
+		// At least one filter, use Find()
 		return Must(enc.Encode(toIface(db.Find(band, title, yri))...))
 	}
+	// Otherwise, return all albums
 	return Must(enc.Encode(toIface(db.GetAll())...))
 }
 
+// GetAlbum returns the requested album.
 func GetAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 	id, err := strconv.Atoi(parms["id"])
 	al := db.Get(id)
 	if err != nil || al == nil {
+		// Invalid id, or does not exist
 		return http.StatusNotFound, Must(enc.Encode(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
-	return 200, Must(enc.Encode(al))
+	return http.StatusOK, Must(enc.Encode(al))
 }
 
+// AddAlbum creates the posted album.
 func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, db DB) (int, string) {
 	al := getPostAlbum(r)
 	id, err := db.Add(al)
 	switch err {
 	case ErrAlreadyExists:
+		// Duplicate
 		return http.StatusConflict, Must(enc.Encode(
 			NewError(ErrCodeAlreadyExists, fmt.Sprintf("the album '%s' from '%s' already exists", al.Title, al.Band))))
 	case nil:
@@ -47,6 +56,7 @@ func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, db DB) (int, 
 	}
 }
 
+// UpdateAlbum changes the specified album.
 func UpdateAlbum(r *http.Request, enc Encoder, db DB, parms martini.Params) (int, string) {
 	al, err := getPutAlbum(r, parms)
 	if err != nil {
@@ -66,6 +76,7 @@ func UpdateAlbum(r *http.Request, enc Encoder, db DB, parms martini.Params) (int
 	}
 }
 
+// Parse the request body, load into an Album structure.
 func getPostAlbum(r *http.Request) *Album {
 	band, title, yrs := r.FormValue("band"), r.FormValue("title"), r.FormValue("year")
 	yri, err := strconv.Atoi(yrs)
@@ -79,6 +90,7 @@ func getPostAlbum(r *http.Request) *Album {
 	}
 }
 
+// Like getPostAlbum, but additionnally, parse and store the `id` query string.
 func getPutAlbum(r *http.Request, parms martini.Params) (*Album, error) {
 	al := getPostAlbum(r)
 	id, err := strconv.Atoi(parms["id"])

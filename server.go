@@ -9,9 +9,12 @@ import (
 	"github.com/codegangsta/martini-contrib/auth"
 )
 
-var m *martini.Martini
-
+// The one and only access token! In real-life scenarios, a more complex authentication
+// middleware than auth.Basic should be used, obviously.
 const AuthToken = "token"
+
+// The one and only martini instance.
+var m *martini.Martini
 
 func init() {
 	m = martini.New()
@@ -33,8 +36,14 @@ func init() {
 	m.Action(r.Handle)
 }
 
+// The regex to check for the requested format (allows an optional trailing
+// slash).
 var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
 
+// MapEncoder intercepts the request's URL, detects the requested format,
+// and injects the correct encoder dependency for this request. It rewrites
+// the URL to remove the format extension, so that routes can be defined
+// without it.
 func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
 	matches := rxExt.FindStringSubmatch(r.URL.Path)
 	ft := ".json"
@@ -68,16 +77,23 @@ func main() {
 		// and returns an error if it is not a secure connection. This would have the benefit
 		// of handling only the defined routes. However, it is common practice to define
 		// APIs on separate web servers from the web (html) pages, for maintenance and
-		// scalability purposes, among other things. It is also common practice to use
-		// a different subdomain so that cookies are not transfered with every API request.
+		// scalability purposes, so it's not like it will block otherwise valid routes.
+		//
+		// It is also common practice to use a different subdomain so that cookies are
+		// not transfered with every API request.
 		// So with that in mind, it seems reasonable to refuse each and every request
-		// on the non-https server, regardless of the route.
+		// on the non-https server, regardless of the route. This could of course be done
+		// on a reverse-proxy in front of this web server.
 		//
 		http.ListenAndServe(":8000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "https scheme is required", http.StatusBadRequest)
 		}))
 	}()
 
-	// Listen on https: with the preconfigured martini instance.
+	// Listen on https: with the preconfigured martini instance. The certificate files
+	// can be created using this command in this repository's root directory:
+	//
+	// go run /path/to/goroot/src/pkg/crypto/tls/generate_cert.go --host="localhost"
+	//
 	http.ListenAndServeTLS(":8001", "cert.pem", "key.pem", m)
 }
