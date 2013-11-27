@@ -30,7 +30,7 @@ func init() {
 	r.Post(`/albums`, AddAlbum)
 	r.Put(`/albums/:id`, UpdateAlbum)
 	r.Delete(`/albums/:id`, DeleteAlbum)
-	// Inject AlbumRepository
+	// Inject database
 	m.MapTo(db, (*DB)(nil))
 	// Add the router action
 	m.Action(r.Handle)
@@ -45,9 +45,11 @@ var rxExt = regexp.MustCompile(`(\.(?:xml|text|json))\/?$`)
 // the URL to remove the format extension, so that routes can be defined
 // without it.
 func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
+	// Get the format extension
 	matches := rxExt.FindStringSubmatch(r.URL.Path)
 	ft := ".json"
 	if len(matches) > 1 {
+		// Rewrite the URL without the format extension
 		l := len(r.URL.Path) - len(matches[1])
 		if strings.HasSuffix(r.URL.Path, "/") {
 			l--
@@ -55,6 +57,7 @@ func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = r.URL.Path[:l]
 		ft = matches[1]
 	}
+	// Inject the requested encoder
 	switch ft {
 	case ".xml":
 		c.MapTo(xmlEncoder{}, (*Encoder)(nil))

@@ -29,17 +29,16 @@ type albumsDB struct {
 }
 
 // The one and only database instance.
-var db *albumsDB
+var db DB
 
 func init() {
 	db = &albumsDB{
 		m: make(map[int]*Album),
 	}
 	// Fill the database
-	db.m[1] = &Album{Id: 1, Band: "Slayer", Title: "Reign In Blood", Year: 1986}
-	db.m[2] = &Album{Id: 2, Band: "Slayer", Title: "Seasons In The Abyss", Year: 1990}
-	db.m[3] = &Album{Id: 3, Band: "Bruce Springsteen", Title: "Born To Run", Year: 1975}
-	db.seq = len(db.m)
+	db.Add(&Album{Id: 1, Band: "Slayer", Title: "Reign In Blood", Year: 1986})
+	db.Add(&Album{Id: 2, Band: "Slayer", Title: "Seasons In The Abyss", Year: 1990})
+	db.Add(&Album{Id: 3, Band: "Bruce Springsteen", Title: "Born To Run", Year: 1975})
 }
 
 // GetAll returns all albums from the database.
