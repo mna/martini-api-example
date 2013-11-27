@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -88,9 +89,11 @@ func main() {
 		// on the non-https server, regardless of the route. This could of course be done
 		// on a reverse-proxy in front of this web server.
 		//
-		http.ListenAndServe(":8000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := http.ListenAndServe(":8000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "https scheme is required", http.StatusBadRequest)
-		}))
+		})); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	// Listen on https: with the preconfigured martini instance. The certificate files
@@ -98,5 +101,7 @@ func main() {
 	//
 	// go run /path/to/goroot/src/pkg/crypto/tls/generate_cert.go --host="localhost"
 	//
-	http.ListenAndServeTLS(":8001", "cert.pem", "key.pem", m)
+	if err := http.ListenAndServeTLS(":8001", "cert.pem", "key.pem", m); err != nil {
+		log.Fatal(err)
+	}
 }

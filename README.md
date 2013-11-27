@@ -6,9 +6,11 @@ To install this example application, run the usual:
 
 `go get github.com/PuerkitoBio/martini-api-example`
 
-To run locally, it requires `cert.pem` and `key.pem` files (for TLS/https). You can generate the pair of files using this simple command, adapted to your environment for the GOROOT part (execute it in the repository's root directory):
+To run locally, it requires `cert.pem` and `key.pem` files (for TLS/https). You can generate the pair of files using this simple command, adapted to your environment for the GOROOT part:
 
 `go run /path/to/goroot/src/pkg/crypto/tls/generate_cert.go --host="localhost"`
+
+When running the API server (which will be named `martini-api-example`, in your $GOPATH/bin directory), it will look for the `*.pem` files in the current directory. You can adapt the code as you see fit, if you want to specify, for example, an absolute path (it is in `server.go`).
 
 ## Blog post
 
