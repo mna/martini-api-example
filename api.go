@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/codegangsta/martini"
+	"github.com/go-martini/martini"
 )
 
 // GetAlbums returns the list of albums (possibly filtered).

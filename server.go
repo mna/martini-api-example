@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/codegangsta/martini"
-	"github.com/codegangsta/martini-contrib/auth"
+	"github.com/go-martini/martini"
+	"github.com/martini-contrib/auth"
 )
 
 // The one and only access token! In real-life scenarios, a more complex authentication
